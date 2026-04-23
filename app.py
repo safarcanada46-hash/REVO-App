@@ -1,82 +1,77 @@
 import streamlit as st
 from streamlit_mic_recorder import mic_recorder
 
-# 1. إعداد الصفحة
+# 1. إعداد الصفحة والتصميم
 st.set_page_config(page_title="REVO 💬", page_icon="💬", layout="centered")
 
-# --- 2. إضافة اختيار الألوان في الجنب ---
-with st.sidebar:
-    st.markdown("### 🎨 تخصيص المظهر")
-    # هاد الألوان هما اللي صيفطتي لي في الصور
-    theme_choice = st.selectbox(
-        "اختار لون الخلفية:",
-        ["الأخضر الهادئ", "الأزرق السماوي", "الوردي الناعم", "الأصفر المشرق", "الذهبي"]
-    )
-    
-    # ربط الاختيار بالكود ديال الألوان (Gradients)
-    if theme_choice == "الأخضر الهادئ":
-        bg_gradient = "linear-gradient(135deg, #e8f5e9, #c8e6c9)"
-    elif theme_choice == "الأزرق السماوي":
-        bg_gradient = "linear-gradient(135deg, #e3f2fd, #bbdefb)"
-    elif theme_choice == "الوردي الناعم":
-        bg_gradient = "linear-gradient(135deg, #fce4ec, #f8bbd0)"
-    elif theme_choice == "الأصفر المشرق":
-        bg_gradient = "linear-gradient(135deg, #fffde7, #fff9c4)"
-    else:
-        bg_gradient = "linear-gradient(135deg, #fff9c4, #ffecb3)"
-
-# --- 3. CSS الديناميكي (كيتغير حسب الاختيار) ---
-st.markdown(f"""
+# --- 2. CSS متطور لإخفاء السهم وتحسين الواجهة ---
+st.markdown("""
     <style>
-    .stApp {{
-        background: {bg_gradient};
-    }}
-    .revo-title {{
+    /* إخفاء زر السهم الافتراضي داخل chat_input */
+    button[data-testid="stChatInputSubmit"] {
+        display: none !important;
+    }
+    
+    .revo-title {
         font-family: 'Courier New', Courier, monospace;
-        font-size: 45px;
+        font-size: 40px;
         font-weight: bold;
         text-align: center;
         color: #128C7E;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-    }}
-    .chat-bubble {{
-        padding: 12px;
-        border-radius: 15px;
-        margin-bottom: 10px;
-        max-width: 80%;
-        box-shadow: 0px 2px 5px rgba(0,0,0,0.05);
-    }}
-    .user-bubble {{ background-color: #DCF8C6; margin-left: auto; border-bottom-right-radius: 2px; }}
-    .other-bubble {{ background-color: #FFFFFF; margin-right: auto; border-bottom-left-radius: 2px; border: 1px solid #E5E5E5; }}
+        margin-bottom: 20px;
+    }
+    
+    /* ستايل فقاعات الشات */
+    .user-bubble { background-color: #DCF8C6; padding: 10px; border-radius: 10px; margin-left: auto; width: fit-content; max-width: 80%; margin-bottom: 10px; }
+    .other-bubble { background-color: #FFFFFF; padding: 10px; border-radius: 10px; margin-right: auto; width: fit-content; max-width: 80%; border: 1px solid #E5E5E5; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
 st.markdown('<p class="revo-title">💬 ℛℰ𝒱𝒪 💬</p>', unsafe_allow_html=True)
 
-# باقي الكود (المحادثة والوسائط) كيبقى هو هو...
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-user_name = st.sidebar.text_input("سميتك:", value="أحمد")
-
-# عرض الرسائل
+# عرض الرسائل القديمة
 for msg in st.session_state.messages:
-    is_me = msg["user"] == user_name
-    bubble_class = "user-bubble" if is_me else "other-bubble"
-    st.markdown(f'<div class="chat-bubble {bubble_class}"><b>{msg["user"]}</b><br>{msg["text"]}</div>', unsafe_allow_html=True)
+    bubble_class = "user-bubble" if msg["user"] == "أحمد" else "other-bubble"
+    st.markdown(f'<div class="{bubble_class}"><b>{msg["user"]}</b><br>{msg["text"]}</div>', unsafe_allow_html=True)
+    if "file" in msg: st.audio(msg["file"])
 
-# شريط الإدخال السفلي
-cols = st.columns([1, 10])
-with cols[0]:
-    if st.button("➕"):
+# --- 3. شريط الأدوات السفلي (الواتساب ستايل) ---
+st.write("---")
+# غادي نقسمو لتحت لـ 3 أعمدة: الزائد، خانة الكتابة، والميكروفون
+bottom_cols = st.columns([1, 8, 1])
+
+with bottom_cols[0]:
+    if st.button("➕", key="plus"):
         st.session_state.show_menu = not st.session_state.get('show_menu', False)
 
-if st.session_state.get('show_menu', False):
-    with st.expander("📎 الوسائط", expanded=True):
-        # (نفس كود الميديا اللي درنا قبل)
-        pass
-
-with cols[1]:
-    if prompt := st.chat_input("اكتب رسالة..."):
-        st.session_state.messages.append({"user": user_name, "text": prompt})
+with bottom_cols[1]:
+    # خانة الكتابة (السهم مخفي دابا بـ CSS)
+    prompt = st.chat_input("اكتب رسالة...")
+    if prompt:
+        st.session_state.messages.append({"user": "أحمد", "text": prompt})
         st.rerun()
+
+with bottom_cols[2]:
+    # الميكروفون في مكان السهم تماماً
+    audio_record = mic_recorder(
+        start_prompt="🎤", 
+        stop_prompt="✅", 
+        key='recorder'
+    )
+    if audio_record:
+        st.session_state.messages.append({
+            "user": "أحمد", 
+            "text": "🎙️ رسالة صوتية", 
+            "file": audio_record['bytes'], 
+            "type": "audio"
+        })
+        st.rerun()
+
+# قائمة الوسائط (إيلا تضغط على الزائد)
+if st.session_state.get('show_menu', False):
+    with st.expander("📎 وسائط إضافية", expanded=True):
+        st.camera_input("📸 صور دابا")
+        st.file_uploader("📁 ملفات")
