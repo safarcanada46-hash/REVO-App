@@ -4,40 +4,43 @@ from streamlit_mic_recorder import mic_recorder
 # 1. إعداد الصفحة
 st.set_page_config(page_title="REVO 💬", page_icon="💬", layout="centered")
 
-# --- 2. CSS احترافي للتصميم والألوان ---
-st.markdown("""
+# --- 2. إضافة اختيار الألوان في الجنب (Sidebar) ---
+with st.sidebar:
+    st.markdown("### 🎨 تخصيص المظهر")
+    theme_choice = st.selectbox(
+        "اختار لون الخلفية:",
+        ["الأخضر الهادئ", "الأزرق السماوي", "الوردي الناعم", "الأصفر المشرق", "الذهبي"]
+    )
+    
+    if theme_choice == "الأخضر الهادئ":
+        bg_gradient = "linear-gradient(135deg, #e8f5e9, #c8e6c9)"
+    elif theme_choice == "الأزرق السماوي":
+        bg_gradient = "linear-gradient(135deg, #e3f2fd, #bbdefb)"
+    elif theme_choice == "الوردي الناعم":
+        bg_gradient = "linear-gradient(135deg, #fce4ec, #f8bbd0)"
+    elif theme_choice == "الأصفر المشرق":
+        bg_gradient = "linear-gradient(135deg, #fffde7, #fff9c4)"
+    else:
+        bg_gradient = "linear-gradient(135deg, #fff9c4, #ffecb3)"
+
+# --- 3. CSS للتصميم العام وتكبير السمية ---
+st.markdown(f"""
     <style>
-    /* تكبير عنوان التطبيق */
-    .revo-title {
+    .stApp {{
+        background: {bg_gradient};
+    }}
+    .revo-title {{
         font-family: 'Arial Black', Gadget, sans-serif;
-        font-size: 70px; /* حجم كبير جداً */
+        font-size: 75px;
         font-weight: 900;
         text-align: center;
         background: linear-gradient(45deg, #128C7E, #075E54);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-top: -20px;
-        margin-bottom: 30px;
-        letter-spacing: 5px;
-    }
-
-    /* تحسين شكل حاوية الميكروفون فوق السهم */
-    .mic-container {
-        position: fixed;
-        bottom: 85px; /* يجي فوق الخانة بالضبط */
-        right: 40px;  /* محاذاة مع جهة السهم */
-        z-index: 1000;
-        background-color: #128C7E;
-        border-radius: 50%;
-        padding: 5px;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
-    }
-
-    /* ألوان الخلفية والفقاعات */
-    .stApp {
-        background: linear-gradient(135deg, #f0f2f5, #e5ddd5);
-    }
-    .user-bubble { 
+        margin-top: -30px;
+        margin-bottom: 20px;
+    }}
+    .user-bubble {{ 
         background-color: #DCF8C6; 
         padding: 12px; 
         border-radius: 15px 15px 2px 15px; 
@@ -46,11 +49,10 @@ st.markdown("""
         max-width: 80%; 
         margin-bottom: 10px;
         box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-    }
+    }}
     </style>
     """, unsafe_allow_html=True)
 
-# عرض العنوان بحجم كبير
 st.markdown('<p class="revo-title">REVO</p>', unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
@@ -63,17 +65,30 @@ for msg in st.session_state.messages:
     if "file" in msg:
         st.audio(msg["file"])
 
-# --- 3. منطقة الإدخال الذكية ---
+# --- 4. شريط الأدوات السفلي (الزائد والأوديو حدا بعضياتهم) ---
+st.write("---")
+# تقسيم السطر: عمود لـ (+) وعمود لـ (🎤) وعمود كبير للكتابة
+input_cols = st.columns([0.8, 0.8, 8])
 
-# الميكروفون موضوع فوق السهم بالضبط
-st.markdown('<div class="mic-container">', unsafe_allow_html=True)
-audio_record = mic_recorder(
-    start_prompt="🎤", 
-    stop_prompt="✅", 
-    key='recorder'
-)
-st.markdown('</div>', unsafe_allow_html=True)
+with input_cols[0]:
+    if st.button("➕", key="plus_btn"):
+        st.session_state.show_menu = not st.session_state.get('show_menu', False)
 
+with input_cols[1]:
+    # زر الأوديو في جنب الزائد بالضبط
+    audio_record = mic_recorder(
+        start_prompt="🎤", 
+        stop_prompt="✅", 
+        key='recorder'
+    )
+
+with input_cols[2]:
+    prompt = st.chat_input("اكتب رسالة...")
+    if prompt:
+        st.session_state.messages.append({"user": "أحمد", "text": prompt})
+        st.rerun()
+
+# معالجة الأوديو إيلا تسجل
 if audio_record:
     st.session_state.messages.append({
         "user": "أحمد", 
@@ -82,8 +97,8 @@ if audio_record:
     })
     st.rerun()
 
-# خانة الكتابة الأساسية (فيها السهم ديالها)
-prompt = st.chat_input("اكتب رسالة...")
-if prompt:
-    st.session_state.messages.append({"user": "أحمد", "text": prompt})
-    st.rerun()
+# منيو الوسائط إيلا تضغط الزائد
+if st.session_state.get('show_menu', False):
+    with st.expander("📎 وسائط", expanded=True):
+        st.camera_input("📸 صورة سريعة")
+        st.file_uploader("📁 ملف")
